@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AB Analyzer · Méliuz</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Méliuz" class="navbar-logo">
+            <span class="navbar-label">AB Analyzer</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-hero">
+            <h1>Testes <span class="accent">A/B de Cashback</span></h1>
+            <p>Selecione um dataset para gerar o relatório com a recomendação de qual variante escalar.</p>
+        </div>
+
+        <div class="dataset-grid">
+            {% for ds in datasets %}
+            <form method="POST" action="/analyze">
+                <input type="hidden" name="dataset" value="{{ ds }}">
+                <div class="dataset-card" onclick="this.closest('form').submit()">
+
+                    {% if 'parceiroA' in ds %}
+                    <div class="icon-circle">A</div>
+                    <div class="card-info">
+                        <h3>Parceiro A</h3>
+                        <div class="detail">92 dias · 3 grupos · Jan a Abr 2011</div>
+                    </div>
+
+                    {% elif 'parceiroB' in ds %}
+                    <div class="icon-circle">B</div>
+                    <div class="card-info">
+                        <h3>Parceiro B</h3>
+                        <div class="detail">61 dias · 3 grupos · Mai a Jun 2011</div>
+                    </div>
+
+                    {% elif 'parceiroC' in ds %}
+                    <div class="icon-circle">C</div>
+                    <div class="card-info">
+                        <h3>Parceiro C</h3>
+                        <div class="detail">45 dias · 2 grupos · Jul a Ago 2011</div>
+                    </div>
+
+                    {% else %}
+                    <div class="icon-circle">?</div>
+                    <div class="card-info">
+                        <h3>{{ ds }}</h3>
+                        <div class="detail">Dataset personalizado</div>
+                    </div>
+                    {% endif %}
+
+                    <button type="submit" class="btn-analyze">Analisar</button>
+                </div>
+            </form>
+            {% endfor %}
+        </div>
+    </div>
+
+    <footer class="footer">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Méliuz" class="footer-logo">
+        Teste Técnico · Estágio de Growth AI-Native
+    </footer>
+
+</body>
+</html>

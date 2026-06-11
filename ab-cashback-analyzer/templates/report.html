@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatorio {{ r.parceiro }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-inner">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Meliuz" class="navbar-logo">
+            <span class="navbar-label">AB Analyzer</span>
+        </div>
+    </nav>
+    <div class="container">
+        <div class="report-header">
+            <div class="breadcrumb"><a href="/">Voltar</a></div>
+            <h1>Relatorio A/B &middot; {{ r.parceiro }}</h1>
+            <div class="test-meta">
+                <span class="tag">{{ r.periodo }}</span>
+                <span class="tag">{{ r.n_grupos }} grupos</span>
+                <span class="tag">{{ r.n_dias }} dias</span>
+            </div>
+        </div>
+
+        <div class="decision-banner">
+            <div class="badge">Recomendacao</div>
+            <div class="winner-text">Escalar <span class="highlight">{{ r.decision.winner }}</span> para 100% do trafego</div>
+            <div class="justification">{{ r.decision.justification }}</div>
+        </div>
+
+        <div class="scores-row">
+            {% for g, score in r.decision.scores|dictsort %}
+            <div class="score-card {{ 'winner' if g == r.decision.winner else '' }}">
+                <div class="group-name">{{ g }}</div>
+                <div class="score-value">{{ score }}</div>
+                <div class="score-label">pontos</div>
+                {% if g == r.decision.winner %}<span class="winner-badge">Vencedor</span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-title">Metricas comparativas</h2>
+        <div class="metrics-table-wrapper">
+            <table class="metrics-table">
+                <thead>
+                    <tr>
+                        <th>Metrica</th>
+                        {% for g in r.groups_metrics|sort %}<th>{{ g }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% set gs = r.groups_metrics|sort|list %}
+                    <tr>
+                        <td>Compradores</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].total_compradores) %}{% endif %}{% endfor %}{% set best = vals|max %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].total_compradores %}<td class="{{ 'highlight-best' if v == best else '' }}">{{ "{:,}".format(v) }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Vendas totais</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].total_vendas) %}{% endif %}{% endfor %}{% set best = vals|max %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].total_vendas %}<td class="{{ 'highlight-best' if v == best else '' }}">R$ {{ "{:,.0f}".format(v) }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Ticket medio</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].ticket_medio) %}{% endif %}{% endfor %}{% set best = vals|max %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].ticket_medio %}<td class="{{ 'highlight-best' if v == best else '' }}">R$ {{ "{:,.2f}".format(v) }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Comissao</td>
+                        {% for g in gs %}<td>R$ {{ "{:,.0f}".format(r.groups_metrics[g].total_comissao) }} ({{ "{:.1f}".format(r.groups_metrics[g].comissao_pct) }}%)</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Cashback</td>
+                        {% for g in gs %}<td>R$ {{ "{:,.0f}".format(r.groups_metrics[g].total_cashback) }} ({{ "{:.1f}".format(r.groups_metrics[g].cashback_pct) }}%)</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Margem</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].margem) %}{% endif %}{% endfor %}{% set best = vals|max %}{% set worst = vals|min %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].margem %}<td class="{{ 'highlight-best' if v == best else ('highlight-worst' if v == worst and v <= 0 else '') }}">R$ {{ "{:,.0f}".format(v) }} ({{ "{:.1f}".format(r.groups_metrics[g].margem_pct) }}%)</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>ROI</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].roi) %}{% endif %}{% endfor %}{% set best = vals|max %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].roi %}<td class="{{ 'highlight-best' if v == best else '' }}">{{ "{:.1f}".format(v) }}%</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Cashback por comprador</td>
+                        {% for g in gs %}<td>R$ {{ "{:,.2f}".format(r.groups_metrics[g].cashback_por_comprador) }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Margem por comprador</td>
+                        {% set vals = [] %}{% for g in gs %}{% if vals.append(r.groups_metrics[g].margem_por_comprador) %}{% endif %}{% endfor %}{% set best = vals|max %}
+                        {% for g in gs %}{% set v = r.groups_metrics[g].margem_por_comprador %}<td class="{{ 'highlight-best' if v == best else '' }}">R$ {{ "{:,.2f}".format(v) }}</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Tendencia de compradores</td>
+                        {% for g in gs %}{% set t = r.groups_metrics[g].trend_buyers %}<td class="{{ 'highlight-worst' if t < -25 else '' }}">{{ "{:+.1f}".format(t) }}%</td>{% endfor %}
+                    </tr>
+                    <tr>
+                        <td>Variabilidade (CV)</td>
+                        {% for g in gs %}<td>{{ "{:.0f}".format(r.groups_metrics[g].cv_buyers) }}%</td>{% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2 class="section-title">Alertas de qualidade</h2>
+        {% if r.quality_alerts %}
+        <div class="alerts-list">
+            {% for alert in r.quality_alerts %}
+            <div class="alert-card {{ alert.severidade }}">
+                <span class="alert-badge">{{ alert.severidade }}</span>
+                <span class="alert-text">{{ alert.msg }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="no-alerts">Nenhum problema de qualidade detectado neste dataset.</div>
+        {% endif %}
+
+        <h2 class="section-title">Significancia estatistica</h2>
+        <div class="stat-grid">
+            {% for t in r.stat_tests %}
+            <div class="stat-card">
+                <div class="pair">{{ t.grupo_a }} vs {{ t.grupo_b }}</div>
+                <div class="stat-row">
+                    <span class="label">Diferenca em vendas</span>
+                    <span class="value {{ 'sig' if t.significativo_vendas else 'not-sig' }}">{{ "{:+.1f}".format(t.diff_vendas_pct) }}% {{ 'significativo' if t.significativo_vendas else 'nao significativo' }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="label">p-value vendas</span>
+                    <span class="value">{{ "{:.4f}".format(t.p_value_vendas) }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="label">Diferenca em compradores</span>
+                    <span class="value {{ 'sig' if t.significativo_compradores else 'not-sig' }}">{{ "{:+.1f}".format(t.diff_compradores_pct) }}% {{ 'significativo' if t.significativo_compradores else 'nao significativo' }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="label">p-value compradores</span>
+                    <span class="value">{{ "{:.4f}".format(t.p_value_compradores) }}</span>
+                </div>
+                <div class="stat-row">
+                    <span class="label">Diferenca no ticket medio</span>
+                    <span class="value {{ 'sig' if t.significativo_ticket else 'not-sig' }}">{{ "{:+.1f}".format(t.diff_ticket_pct) }}% {{ 'significativo' if t.significativo_ticket else 'nao significativo' }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <h2 class="section-title">Racional de pontuacao</h2>
+        <div class="reasoning-grid">
+            {% for g in r.decision.reasoning|sort %}
+            <div class="reasoning-card {{ 'winner-card' if g == r.decision.winner else '' }}">
+                <h4>{{ g }} &middot; {{ r.decision.scores[g] }} pts</h4>
+                <ul>
+                    {% for reason in r.decision.reasoning[g] %}
+                    <li>{{ reason }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="actions-bar">
+            <a href="/download-csv" class="btn btn-primary">Baixar CSV consolidado</a>
+            <a href="/" class="btn btn-outline">Analisar outro dataset</a>
+        </div>
+    </div>
+    <footer class="footer">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="Meliuz" class="footer-logo">
+        Teste Tecnico &middot; Estagio de Growth AI-Native
+    </footer>
+</body>
+</html>
